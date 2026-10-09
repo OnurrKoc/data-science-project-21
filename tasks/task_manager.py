@@ -1,5 +1,7 @@
 import numpy as np
 from scipy import stats
+from scipy.stats import chi2, ttest_ind, chi2_contingency, f_oneway
+import random
 
 # Açıklama: Verilen büyü başarı sonuçlarının (1=başarılı, 0=başarısız) 
 # ortalama başarı oranını döndürür.
@@ -8,6 +10,7 @@ from scipy import stats
 # Örnek:
 # calculate_mean_success_rate([1, 0, 1, 1]) → 0.75
 def calculate_mean_success_rate(spell_results):
+    return sum(spell_results) / len(spell_results)
     pass
 
 # Açıklama: İki büyü grubunun başarı oranlarının farkını Z-Test ile karşılaştırır.
@@ -16,6 +19,16 @@ def calculate_mean_success_rate(spell_results):
 # Örnek:
 # perform_z_test([1,0,1,1], [0,1,0,0]) → (z_stat=1.41, p_value=0.15)
 def perform_z_test(sample1, sample2):
+    n1, n2 = len(sample1), len(sample2)
+    p1 = sum(sample1) / n1
+    p2 = sum(sample2) / n2
+    p = (sum(sample1) + sum(sample2)) / (n1 + n2)
+    se = (p * (1 - p) * (1/n1 + 1/n2)) ** 0.5
+    if se == 0:
+        return (0.0, 1.0)
+    z = (p1 - p2) / se
+    p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+    return (float(z), float(p_value))
     pass
 
 # Açıklama: İki grubun başarı oranları arasındaki farkı T-Test ile karşılaştırır.
@@ -24,6 +37,8 @@ def perform_z_test(sample1, sample2):
 # Örnek:
 # perform_t_test([3,4,5], [2,3,2]) → (1.5, 0.18)
 def perform_t_test(sample1, sample2):
+    t, p = ttest_ind(sample1, sample2)
+    return (float(t), float(p))
     pass
 
 # Açıklama: Büyü türleri ve başarı durumları arasındaki bağımsızlığı test eder.
@@ -33,6 +48,8 @@ def perform_t_test(sample1, sample2):
 # Örnek:
 # perform_chi_square_test([[10, 5], [6, 9]]) → (1.20, 0.27)
 def perform_chi_square_test(contingency_table):
+   chi2, p, dof, expected = chi2_contingency(contingency_table)
+   return (float(chi2), float(p))
    pass
 
 # Açıklama: 3 veya daha fazla büyü grubunun başarı oranlarını ANOVA testi ile karşılaştırır.
@@ -41,6 +58,8 @@ def perform_chi_square_test(contingency_table):
 # Örnek:
 # perform_anova_test([1,2,3], [2,2,2], [3,3,3]) → (4.5, 0.03)
 def perform_anova_test(*groups):
+    f, p = f_oneway(*groups)
+    return (float(f), float(p))
     pass
 
 # Açıklama: Verilen başarı oranıyla n adet rastgele 1/0 sonucu döndürür.
@@ -49,6 +68,7 @@ def perform_anova_test(*groups):
 # Örnek:
 # generate_random_spell_results(5, 0.6) → [1,0,1,1,0]
 def generate_random_spell_results(n, success_rate):
+    return [1 if random.random() < success_rate else 0 for _ in range(n)]
     pass
 
 
@@ -58,6 +78,9 @@ def generate_random_spell_results(n, success_rate):
 # Örnek:
 # compare_spells([1,1,0], [0,0,1])  → {'z': (1.23, 0.21), 't': (1.10, 0.28)}
 def compare_spells(spell1_results, spell2_results):
+   z_sonuc = perform_z_test(spell1_results, spell2_results)
+   t_sonuc = perform_t_test(spell1_results, spell2_results)
+   return {"z": z_sonuc, "t": t_sonuc}
    pass
 
 # Açıklama: İki büyü arasındaki fark anlamlı mı (p<0.05)?
@@ -66,10 +89,12 @@ def compare_spells(spell1_results, spell2_results):
 # Örnek:
 # is_spell_significant([1,1,1], [0,0,0], alpha=0.05) → True
 def is_spell_significant(spell1_results, spell2_results, alpha=0.05):
+   _, p_value = perform_t_test(spell1_results, spell2_results)
+   return p_value < alpha
    pass
 
 
- """
+"""
     Bu fonksiyon, büyü (spell) sonuçlarını içeren bir liste veya sözlükten,
     özet istatistiksel bilgiler çıkararak okunabilir bir rapor üretmek için kullanılır.
 
@@ -102,4 +127,8 @@ def is_spell_significant(spell1_results, spell2_results, alpha=0.05):
         Rapor stringi veya özet bilgileri içeren sözlük dönebilir.
     """
 def generate_spell_summary_report(spell_results):
+   toplam = len(spell_results)
+   basarili = sum(spell_results)
+   oran = basarili / toplam if toplam > 0 else 0
+   return f"Toplam Deneme: {toplam}, Basarili: {basarili}, Oran: {oran:.2f}"
    pass
